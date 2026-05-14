@@ -7,9 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
-app = FastAPI(title="FitBot Pro Business Engine")
+# Initializing the App
+app = FastAPI(
+    title="FitBot Pro Business Engine",
+    description="Production-grade biometric and styling API",
+    version="2.0.1"
+)
 
-# ✅ Professional CORS setup for Flutter communication
+# ✅ Enterprise CORS Setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,6 +48,7 @@ class ProductSearchService:
         api_key = os.getenv("SERPAPI_KEY")
         
         if not api_key:
+            print("WARNING: SERPAPI_KEY missing in environment variables.")
             return []
 
         url = "https://serpapi.com/search.json"
@@ -56,7 +62,7 @@ class ProductSearchService:
         }
 
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=10)
             results = response.json().get("shopping_results", [])
             
             formatted_recs = []
@@ -72,10 +78,20 @@ class ProductSearchService:
                     "suggested_color": f"Price: {item.get('price')}"
                 })
             return formatted_recs
-        except Exception:
+        except Exception as e:
+            print(f"Search Service Error: {e}")
             return []
 
-# --- 🟢 RENDER HEALTH CHECK (Crucial for Deployment) ---
+# --- 🏠 ROOT ENDPOINT (Prevents 404 Log Spam) ---
+@app.get("/")
+async def root():
+    return {
+        "message": "FitBot Pro API is Online",
+        "status": "active",
+        "endpoints": ["/health", "/analyze"]
+    }
+
+# --- 🟢 RENDER HEALTH CHECK (Required for 'Live' status) ---
 @app.get("/health")
 async def health_check():
     return {"status": "online", "timestamp": time.time()}
@@ -84,23 +100,31 @@ async def health_check():
 @app.post("/analyze")
 async def analyze_and_search(request: ScanRequest):
     try:
-        # 1. Biometric Logic
+        # 1. Biometric Logic (Smartphone Focal Calibration)
         s_w = 16.5 
         if request.left_shoulder and request.right_shoulder:
-            px_dist = math.sqrt((request.right_shoulder['x'] - request.left_shoulder['x'])**2)
+            # Calculate pixel distance on the X-axis
+            px_dist = abs(request.right_shoulder['x'] - request.left_shoulder['x'])
+            # Scale pixels to inches based on height anchor
             s_w = round((px_dist * 0.026) * (request.anchor_height_inches / 65.0), 1)
 
-        # 2. Body Shape Logic
+        # 2. Body Shape Identification
         shape = request.category if request.category != "none" else "Rectangle"
-        if s_w > 18: shape = "Inverted Triangle"
+        if s_w > 18: 
+            shape = "Inverted Triangle"
         
-        # 3. Dynamic Web Search
+        # 3. Dynamic Product Sourcing
         recommendations = ProductSearchService.get_real_products(shape, request.concept, request.segment)
 
         return {
             "shape": shape,
             "recommendations": recommendations,
-            "measurements_in": {"shoulders": s_w, "waist": 28.0, "hips": 36.0}
+            "measurements_in": {
+                "shoulders": s_w, 
+                "waist": 28.0, 
+                "hips": 36.0
+            }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Analysis Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Engine Error")
