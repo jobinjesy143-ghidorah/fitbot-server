@@ -1,94 +1,82 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import Optional, Dict
 
-import 'core/network/api_client.dart';
-import 'features/auth/presentation/auth_screen.dart';
-import 'features/dashboard/presentation/dashboard_wrapper.dart';
+app = FastAPI(title="FitBot Intelligence Engine - Production")
 
-// ✅ GLOBAL THEME CONTROLLER
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+class ScanRequest(BaseModel):
+    username: str
+    anchor_height_inches: float
+    segment: str
+    concept: str
+    category: str
+    shoulders: Optional[float] = None
+    chest: Optional[float] = None
+    waist: Optional[float] = None
+    hips: Optional[float] = None
+    left_shoulder: Optional[Dict[str, float]] = None
+    right_shoulder: Optional[Dict[str, float]] = None
+    left_hip: Optional[Dict[str, float]] = None
+    right_hip: Optional[Dict[str, float]] = None
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const FitBotEnterprise());
-}
+# ✅ STARTUP CATALOG: Uses hyper-stable image generators instead of brittle Unsplash IDs
+CATALOG = [
+    # WOMENSWEAR - CASUAL
+    {"name": "Cinched Waist Wrap Dress", "brand": "Zara", "price": "59.90", "image_url": "https://picsum.photos/seed/zara1/500/800", "product_url": "https://www.zara.com", "target_shapes": ["Hourglass", "Rectangle"], "segment": "Womenswear", "concept": "Casual"},
+    {"name": "A-Line Midi Skirt", "brand": "H&M", "price": "34.99", "image_url": "https://picsum.photos/seed/hm2/500/800", "product_url": "https://www.hm.com", "target_shapes": ["Inverted Triangle", "Apple"], "segment": "Womenswear", "concept": "Casual"},
+    {"name": "High-Rise Straight Cut Denim", "brand": "Levi's", "price": "89.50", "image_url": "https://picsum.photos/seed/levis3/500/800", "product_url": "https://www.levi.com", "target_shapes": ["Pear", "Hourglass", "Spoon"], "segment": "Womenswear", "concept": "Casual"},
+    
+    # WOMENSWEAR - FORMAL
+    {"name": "Structured Shoulder Blazer", "brand": "Mango", "price": "119.99", "image_url": "https://picsum.photos/seed/mango4/500/800", "product_url": "https://shop.mango.com", "target_shapes": ["Pear", "Spoon", "Rectangle"], "segment": "Womenswear", "concept": "Formal"},
+    {"name": "Deep V-Neck Silk Blouse", "brand": "Massimo Dutti", "price": "95.00", "image_url": "https://picsum.photos/seed/massimo5/500/800", "product_url": "https://www.massimodutti.com", "target_shapes": ["Inverted Triangle", "Apple", "Rectangle"], "segment": "Womenswear", "concept": "Formal"},
+    
+    # MENSWEAR - CASUAL
+    {"name": "Tapered Cargo Joggers", "brand": "Nike", "price": "75.00", "image_url": "https://picsum.photos/seed/nike6/500/800", "product_url": "https://www.nike.com", "target_shapes": ["Inverted Triangle", "Rectangle", "Athletic"], "segment": "Menswear", "concept": "Casual"},
+    {"name": "Classic Relaxed Fit Tee", "brand": "Uniqlo", "price": "19.90", "image_url": "https://picsum.photos/seed/uniqlo7/500/800", "product_url": "https://www.uniqlo.com", "target_shapes": ["Apple", "Pear", "Rectangle"], "segment": "Menswear", "concept": "Casual"},
+    
+    # MENSWEAR - FORMAL
+    {"name": "Slim Fit Oxford Shirt", "brand": "Ralph Lauren", "price": "125.00", "image_url": "https://picsum.photos/seed/ralph8/500/800", "product_url": "https://www.ralphlauren.com", "target_shapes": ["Athletic", "Inverted Triangle", "Hourglass"], "segment": "Menswear", "concept": "Formal"},
+    {"name": "Tailored Wool Suit Jacket", "brand": "SuitSupply", "price": "399.00", "image_url": "https://picsum.photos/seed/suit9/500/800", "product_url": "https://suitsupply.com", "target_shapes": ["Pear", "Rectangle", "Athletic"], "segment": "Menswear", "concept": "Formal"}
+]
 
-class FitBotEnterprise extends StatelessWidget {
-  const FitBotEnterprise({super.key});
+@app.get("/")
+def root_check():
+    return {"status": "online"}
 
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (_, ThemeMode currentMode, __) {
-        return MaterialApp(
-          title: 'FitBot Enterprise',
-          debugShowCheckedModeBanner: false,
-          
-          themeMode: currentMode,
-          theme: ThemeData.light().copyWith(
-            primaryColor: const Color(0xFF6C63FF),
-            scaffoldBackgroundColor: const Color(0xFFF4F7FF),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: Colors.black),
-              titleTextStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20),
-            ),
-            colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF), brightness: Brightness.light),
-          ),
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "code": 200}
 
-          darkTheme: ThemeData.dark().copyWith(
-            primaryColor: const Color(0xFF00F5D4),
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            cardColor: const Color(0xFF1E1E1E),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: Colors.white),
-              titleTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
-            ),
-            colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00F5D4), brightness: Brightness.dark),
-          ),
+@app.post("/analyze")
+async def analyze_profile(req: ScanRequest):
+    shape_result = req.category.strip().title()
 
-          home: const AuthGateway(),
-        );
-      }
-    );
-  }
-}
+    if shape_result.lower() == "none" or shape_result == "":
+        if req.shoulders and req.hips:
+            diff = req.shoulders - req.hips
+            if diff > 2.0:
+                shape_result = "Inverted Triangle"
+            elif diff < -2.0:
+                shape_result = "Pear"
+            else:
+                shape_result = "Hourglass"
+        else:
+            shape_result = "Rectangle"
 
-class AuthGateway extends StatefulWidget {
-  const AuthGateway({super.key});
-  @override
-  State<AuthGateway> createState() => _AuthGatewayState();
-}
+    recommended_products = []
+    
+    for item in CATALOG:
+        if req.segment.lower() != item["segment"].lower() and item["segment"] != "Unisex":
+            continue
+        if req.concept.lower() != item["concept"].lower() and req.concept.lower() != "any":
+            continue
+        if shape_result not in item["target_shapes"] and "All" not in item["target_shapes"]:
+            continue
+        recommended_products.append(item)
 
-class _AuthGatewayState extends State<AuthGateway> {
-  @override
-  void initState() {
-    super.initState();
-    _wakeUpServer();
-  }
+    if len(recommended_products) == 0:
+        recommended_products = [
+            {"name": f"Universal Fit Essential ({req.concept})", "brand": "FitBot Basics", "price": "29.99", "image_url": "https://picsum.photos/seed/fallback/500/800", "product_url": "https://google.com"}
+        ]
 
-  Future<void> _wakeUpServer() async {
-    bool isAlive = await ApiClient.checkHealth();
-    debugPrint("AI Engine Status: ${isAlive ? 'ONLINE' : 'WAKING UP...'}");
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF6C63FF))));
-        }
-        if (snapshot.hasData) return const DashboardWrapper();
-        return const AuthScreen();
-      },
-    );
-  }
-}
+    return {"shape": shape_result, "products": recommended_products}
