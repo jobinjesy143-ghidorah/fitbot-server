@@ -77,8 +77,8 @@ async def analyze_profile(req: ScanRequest):
         }
     ]
 
-    # 3. Return the exact JSON structure your Flutter app expects
+    # 3. Return the exact JSON structure your Flutter app expects cleanly!
     return {
         "shape": shape_result,
         "products": products_list
-    } detail="Internal Engine Error")
+    }
