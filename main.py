@@ -50,9 +50,6 @@ async def analyze_profile(req: ScanRequest):
             shape_result = "Proportional"
 
     # 2. Add Jury-Safe Dummy Products (The Fallback Net)
-    # If your real web scraping logic goes here, and it returns 0 items, 
-    # it will default to these guaranteed products so the app NEVER looks empty.
-    
     products_list = [
         {
             "name": f"Premium {req.concept} Jacket ({req.segment})",
