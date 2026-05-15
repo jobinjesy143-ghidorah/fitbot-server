@@ -4,7 +4,6 @@ from typing import Optional, Dict, Any
 
 app = FastAPI(title="FitBot Intelligence Engine")
 
-# This perfectly matches the payload from your Flutter app
 class ScanRequest(BaseModel):
     username: str
     anchor_height_inches: float
@@ -12,29 +11,31 @@ class ScanRequest(BaseModel):
     concept: str
     category: str
     
-    # Optional Manual Inputs
     shoulders: Optional[float] = None
     chest: Optional[float] = None
     waist: Optional[float] = None
     hips: Optional[float] = None
     
-    # Optional Camera Inputs
     left_shoulder: Optional[Dict[str, float]] = None
     right_shoulder: Optional[Dict[str, float]] = None
     left_hip: Optional[Dict[str, float]] = None
     right_hip: Optional[Dict[str, float]] = None
 
+# 1. The Default Root Route
 @app.get("/")
-def health_check():
+def root_check():
     return {"status": "online"}
+
+# 2. THE FIX: The exact route Render is looking for to keep the server alive!
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "code": 200}
 
 @app.post("/analyze")
 async def analyze_profile(req: ScanRequest):
     shape_result = req.category
 
-    # 1. Calculate Shape if it wasn't provided (Camera or Manual modes)
     if shape_result.lower() == "none" or shape_result == "":
-        # Basic logic: Compare shoulders to hips
         if req.shoulders and req.hips:
             diff = req.shoulders - req.hips
             if diff > 2.0:
@@ -44,12 +45,10 @@ async def analyze_profile(req: ScanRequest):
             else:
                 shape_result = "Hourglass"
         elif req.left_shoulder and req.left_hip:
-            # Fallback for 3D Camera Math
             shape_result = "Athletic Rectangle"
         else:
             shape_result = "Proportional"
 
-    # 2. Add Jury-Safe Dummy Products (The Fallback Net)
     products_list = [
         {
             "name": f"Premium {req.concept} Jacket ({req.segment})",
@@ -74,7 +73,6 @@ async def analyze_profile(req: ScanRequest):
         }
     ]
 
-    # 3. Return the exact JSON structure your Flutter app expects cleanly!
     return {
         "shape": shape_result,
         "products": products_list
