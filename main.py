@@ -43,7 +43,7 @@ CATALOG = [
     {"name": "Slim Fit Oxford Shirt", "brand": "Ralph Lauren", "price": "125.00", "image_url": "https://images.unsplash.com/photo-1596755094514-f87e32f85e2c?auto=format&fit=crop&w=500&q=80", "product_url": "https://www.ralphlauren.com/search?q=slim+fit+oxford", "target_shapes": ["Athletic", "Trapezoid", "Inverted Triangle"], "segment": "Menswear", "concept": "Formal"},
     {"name": "Tailored Wool Suit Jacket", "brand": "SuitSupply", "price": "399.00", "image_url": "https://images.unsplash.com/photo-1594938298598-70f70fc67120?auto=format&fit=crop&w=500&q=80", "product_url": "https://suitsupply.com/en-us/search?q=wool+jacket", "target_shapes": ["Rectangle", "Trapezoid", "Athletic"], "segment": "Menswear", "concept": "Formal"},
 
-    # KIDSWEAR (Uses "All" since kids shapes are standard)
+    # KIDSWEAR
     {"name": "Comfort Stretch Overalls", "brand": "OshKosh", "price": "35.00", "image_url": "https://images.unsplash.com/photo-1519238396246-bd6993510e47?auto=format&fit=crop&w=500&q=80", "product_url": "https://www.oshkosh.com/search?q=overalls", "target_shapes": ["All", "Standard Proportional"], "segment": "Kidswear", "concept": "Casual"},
 ]
 
@@ -116,4 +116,4 @@ async def analyze_profile(req: ScanRequest):
             }
         ]
 
-    return {"shape": shape_result, "products": recommended_products}mmended_products}
+    return {"shape": shape_result, "products": recommended_products}
